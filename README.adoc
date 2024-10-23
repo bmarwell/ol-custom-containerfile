@@ -1,0 +1,88 @@
+= ol-custom-containerfile
+
+Test setup with custom containerfile based on MS Playwright's Java Image
+
+== Usage
+
+[source,bash]
+----
+# compile and package
+./mvnw verify
+
+# run liberty devc
+./mvnw liberty:devc
+----
+
+Expected results::
+`ENTRYPOINT ["/opt/ol/helpers/runtime/docker-server.sh"]` will not try to create a new keystore.xml.
+
+Actual result::
+[source,bash]
+----
+[INFO] + rm -rf /output/messaging /logs/console.log /logs/messages.log /logs/messages_24.10.23_17.31.59.0.log /opt/ol/wlp/output/.classCache
+[INFO] + chmod -R g+rwx /output/workarea
+[INFO] + [[ -d /output/resources ]]
+[INFO] + chmod -R g+rwx /output/resources
+[INFO] ++ awk '/^Cache is [0-9.]*% .*full/ {print substr($3, 1, length($3)-1)}'
+[INFO] + FULL=62
+[INFO] + echo 'SCC layer is 62% full.'
+[INFO] [2/2] COMMIT ol-custom-containerfile-web-rest-dev-mode
+[INFO] --> a382dd5df31c
+[INFO] Successfully tagged localhost/ol-custom-containerfile-web-rest-dev-mode:latest
+[INFO] a382dd5df31cee142c1563253ac2f32469135537f2a2a7e068df9d3f0dcb32ab
+[INFO] Completed building container image.
+[INFO] Starting container...
+[INFO] Container command: podman run --rm -p 9080:9080 -p 9443:9443 -p 7777:7777 -e WLP_DEBUG_SUSPEND=n -e WLP_DEBUG_ADDRESS=7777 -e WLP_DEBUG_REMOTE=y -v $HOME/projects/ol-custom-containerfile/web/rest/target/.libertyDevc/apps:/config/apps -v $HOME/projects/ol-custom-containerfile/web/rest/target/.libertyDevc/dropins:/config/dropins -v $HOME/projects/ol-custom-containerfile:/devmode -v $HOME/projects/ol-custom-containerfile/web/rest/target/wlp-usr/servers/defaultServer/logs:/logs -v $HOME/.m2/repository:/devmode-maven-cache -v $HOME/projects/ol-custom-containerfile/web/rest/target/wlp-usr/servers/defaultServer/server.xml:/config/server.xml -v $HOME/projects/ol-custom-containerfile/web/rest/target/wlp-usr/servers/defaultServer/jvm.options:/config/jvm.options --user 1000 --name liberty-dev ol-custom-containerfile-web-rest-dev-mode server debug defaultServer -- --io.openliberty.tools.projectRoot=/devmode
+[INFO] /opt/ol/helpers/runtime/docker-server.sh: line 76: /config/configDropins/defaults/keystore.xml: Permission denied
+[ERROR] An error occurred while running the container: /opt/ol/helpers/runtime/docker-server.sh: line 76: /config/configDropins/defaults/keystore.xml: Permission denied RC=1
+
+----
+
+Not sure why the `keystore.xml` created by `configure.sh` was not found.
+It is there, and no mount seems to overwrite it.
+`chmod` has no effect either.
+
+Here is the output from my build:
+
+[source,bash]
+----
+[INFO] [2/2] STEP 6/6: RUN configure.sh && chmod ugo+rwx /config /config/configDropins /config/configDropins/defaults && chmod ugo+rw /config/configDropins/defaults/keystore.xml
+[INFO] + main
+[INFO] + WLP_INSTALL_DIR=/opt/ol/wlp
+[INFO] + SHARED_CONFIG_DIR=/opt/ol/wlp/usr/shared/config
+[INFO] + SHARED_RESOURCE_DIR=/opt/ol/wlp/usr/shared/resources
+[INFO] + SNIPPETS_SOURCE=/opt/ol/helpers/build/configuration_snippets
+[INFO] + SNIPPETS_TARGET=/config/configDropins/overrides
+[INFO] + SNIPPETS_TARGET_DEFAULTS=/config/configDropins/defaults
+[INFO] + mkdir -p /config/configDropins/overrides
+[INFO] + mkdir -p /config/configDropins/defaults
+[INFO] + [[ -n '' ]]
+[INFO] + '[' '' == client ']'
+[INFO] + '[' '' == embedded ']'
+[INFO] + keystorePath=/config/configDropins/defaults/keystore.xml
+[INFO] + '[' '' '!=' false ']'
+[INFO] + '[' '' '!=' false ']'
+[INFO] + '[' '!' -e /config/configDropins/defaults/keystore.xml ']'
+[INFO] ++ openssl rand -base64 32
+[INFO] + export KEYSTOREPWD=nS2zPO5QM62CRhYm0daCq8Wr4jQGy5jcx4ed/xSV4ok=
+[INFO] + KEYSTOREPWD=nS2zPO5QM62CRhYm0daCq8Wr4jQGy5jcx4ed/xSV4ok=
+[INFO] + sed 's|REPLACE|nS2zPO5QM62CRhYm0daCq8Wr4jQGy5jcx4ed/xSV4ok=|g' /opt/ol/helpers/build/configuration_snippets/keystore.xml
+[INFO] + chmod g+w /config/configDropins/defaults/keystore.xml
+[INFO] + [[ -n '' ]]
+[INFO] + find /opt/ol/fixes -type f -name '*.jar' -print0
+[INFO] + sort -z
+[INFO] + xargs -0 -n 1 -r -I '{}' java -jar '{}' --installLocation /opt/ol/wlp
+[INFO] xargs: warning: options --max-args and --replace/-I/-i are mutually exclusive, ignoring previous --max-args value
+[INFO] + touch /config/server.xml
+[INFO] + '[' true == true ']'
+[INFO] + cmd='populate_scc.sh -i 1'
+[INFO] + '[' '' == false ']'
+[INFO] + '[' '!' '' = '' ']'
+[INFO] + '[' '' = false ']'
+[INFO] + '[' '!' '' = '' ']'
+[INFO] + '[' '' = false ']'
+[INFO] + '[' '!' '' = '' ']'
+[INFO] + eval populate_scc.sh -i 1
+[INFO] ++ populate_scc.sh -i 1
+----
+
